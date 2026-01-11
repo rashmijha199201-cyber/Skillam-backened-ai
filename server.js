@@ -4,25 +4,26 @@ import cors from "cors";
 
 const app = express();
 
-// Middlewares
+/* ✅ CORS FIX */
 app.use(cors());
+app.options("*", cors());
 app.use(express.json());
 
-// Health check (optional but useful)
+/* Health check */
 app.get("/", (req, res) => {
-  res.send("Skillam GPT Backend is running 🚀");
+  res.send("Skillam GPT Backend is running ✅");
 });
 
-// Chat endpoint
+/* Chat endpoint */
 app.post("/chat", async (req, res) => {
   try {
-    const userMessage = req.body.message;
+    const { message } = req.body;
 
-    if (!userMessage) {
-      return res.status(400).json({ reply: "Message is required" });
+    if (!message) {
+      return res.status(400).json({ reply: "Message missing" });
     }
 
-    const openaiResponse = await fetch(
+    const openaiRes = await fetch(
       "https://api.openai.com/v1/chat/completions",
       {
         method: "POST",
@@ -31,43 +32,39 @@ app.post("/chat", async (req, res) => {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "gpt-3.5-turbo",
+          model: "gpt-4o-mini",   // ✅ CURRENT SUPPORTED MODEL
           messages: [
             {
               role: "system",
               content:
-                "You are Skillam Institute AI counselor. Answer politely about courses, fees, admissions, careers, and student guidance. Location: Kanpur."
+                "You are Skillam Institute AI counselor. Answer politely about courses, fees, admissions, and careers."
             },
-            {
-              role: "user",
-              content: userMessage
-            }
+            { role: "user", content: message }
           ]
         })
       }
     );
 
-    const data = await openaiResponse.json();
+    const data = await openaiRes.json();
 
-    if (!data.choices || !data.choices[0]) {
-      return res.status(500).json({ reply: "AI response error" });
+    if (!data.choices) {
+      return res.status(500).json({
+        reply: "OpenAI error. Check API key."
+      });
     }
 
-    res.json({
-      reply: data.choices[0].message.content
-    });
+    res.json({ reply: data.choices[0].message.content });
 
-  } catch (error) {
-    console.error("Error:", error);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({
       reply: "Server error. Please try again."
     });
   }
 });
 
-// ✅ IMPORTANT: Dynamic port for Render
+/* ✅ RENDER PORT FIX */
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
   console.log("Skillam GPT backend running on port " + PORT);
 });
